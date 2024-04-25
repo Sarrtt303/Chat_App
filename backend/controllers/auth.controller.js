@@ -13,6 +13,7 @@ export const signup = async(req,res)=>{
      if(user){
       return res.status(400).json({error:"Username already exists"})
      }
+
       //Passwrod Hashing
       const salt= await bcrypt.genSalt(10);
       const hashedPassword= await bcrypt.hash(password,salt);
@@ -29,15 +30,16 @@ export const signup = async(req,res)=>{
         gender,
         profilePic: gender === 'male' ? boyProfilePicture : girlProfilePicture
        })
-
+      //Checks if the new-user exists 
        if(newUser){
+        // generateTokenAndSetCookie(user._id, res);
         await newUser.save();
 
        res.status(201).json({
         _id: newUser._id,
         fullname: newUser.fullName,
         username: newUser.username,
-        profilePic: newUser.ProfilePic
+        profilePic: newUser.profilePic
          });
        } else{
         res.status(400).json({error: "Invalid user Data"})
@@ -48,9 +50,36 @@ export const signup = async(req,res)=>{
          res.status(500).json({error:"Internal server error"})
    }
 };
-export const login =(req,res)=>{
-    res.send("loginUser");
+export const login = async (req,res)=>{
+    try{
+        const {username, password}= req.body; //Get the ausername and password from the frontend
+        //Find the username from the database and save it to the variable
+        const user=await User.findOne({username})
+        //Checks if the hashed password and username in the databse matched the entered values
+        const isPasswordCorrect= await bcrypt.compare(password,user?. password || "");
+         if (!user || !isPasswordCorrect){
+          return res.status(400).json({error: "Invalid username and password"})
+         }
+
+        //  generateTokenAndSetCookie(user._id, res);
+
+        res.staus(200).json({
+          _id: user._id,
+          fullName: user.fullName,
+          username: user.username,
+          profilePic: user.profilePic,
+        })
+        }catch(error){
+        console.log("Error in login controller". error.message);
+        res.sstaus(500).json({error: "internal server error"})
+    }
 };
 export const logout =(req,res)=>{
-    console.log("logoutUser");
+    try{
+         res.cookie("jwt","", {maxAge:0});
+         res.staus(200).json({mesage: "Logged out seccuessfully"});
+    }catch{
+       console.log("Error in logout controller", error.mesage);
+       res.status(500).json({error: "internal server Error"});
+    }
 };
